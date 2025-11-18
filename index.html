@@ -32,18 +32,19 @@
       const videoId = url.searchParams.get('v') || 'M7lc1UVf-VE';
       const autoplay = url.searchParams.get('autoplay') || '1';
 
-      // 1) Load the YouTube IFrame API
+      // Load the YouTube IFrame API
       const tag = document.createElement('script');
       tag.src = 'https://www.youtube.com/iframe_api';
       document.head.appendChild(tag);
 
       let player;
+      let hasUnmuted = false;
 
-      // 2) Called by the IFrame API when it's ready
+      // Called by the IFrame API when it's ready
       function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
           videoId: videoId,
-          host: 'https://www.youtube-nocookie.com', // use nocookie host
+          host: 'https://www.youtube-nocookie.com',
           playerVars: {
             autoplay: autoplay === '1' ? 1 : 0,
             controls: 0,          // hide controls
@@ -52,24 +53,46 @@
             iv_load_policy: 3,
             modestbranding: 1,
             playsinline: 1,
-            origin: 'https://duplecast.com'
+            origin: 'https://duplecast.com',
+            mute: 1               // start muted (extra hint)
           },
           events: {
-            onReady: onPlayerReady
+            onReady: onPlayerReady,
+            onStateChange: onPlayerStateChange
           }
         });
       }
 
-      // 3) Try to autoplay as soon as player is ready
       function onPlayerReady(event) {
         try {
+          // hard-mute before autoplay
+          event.target.mute();
+          event.target.setVolume(0);
           event.target.playVideo();
         } catch (e) {
-          console.log('playVideo error:', e);
+          console.log('onPlayerReady error:', e);
         }
       }
 
-      // Expose required callback to global scope
+      function onPlayerStateChange(event) {
+        // When playback actually starts, unmute once
+        if (
+          event.data === YT.PlayerState.PLAYING &&
+          !hasUnmuted
+        ) {
+          hasUnmuted = true;
+          setTimeout(() => {
+            try {
+              player.unMute();
+              player.setVolume(100);
+            } catch (e) {
+              console.log('unMute error:', e);
+            }
+          }, 500); // small delay to keep it "same gesture" on some engines
+        }
+      }
+
+      // Expose callbacks globally for the YT API
       window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
     </script>
   </body>
