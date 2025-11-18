@@ -13,13 +13,14 @@
         background: #000;
       }
       iframe {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100vw;
-    height: 100vh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100vw;
+        height: 100vh;
+        border: 0;
       }
     </style>
   </head>
@@ -28,16 +29,14 @@
       const url = new URL(window.location.href);
       const videoId = url.searchParams.get('v') || 'M7lc1UVf-VE';
       const autoplay = url.searchParams.get('autoplay') || '1';
-      const mute = url.searchParams.get('mute') || '1';
 
       const iframe = document.createElement('iframe');
       iframe.src =
         'https://www.youtube-nocookie.com/embed/' +
         encodeURIComponent(videoId) +
-        '?enablejsapi=1&autoplay=' +
-        autoplay +
-        '&mute=' +
-        mute +
+        '?enablejsapi=1' +
+        '&autoplay=' + autoplay +
+        '&controls=0' +           // hide controls
         '&origin=https://duplecast.com';
 
       iframe.allow = 'autoplay; encrypted-media';
