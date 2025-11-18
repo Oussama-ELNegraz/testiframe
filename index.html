@@ -12,7 +12,7 @@
         height: 100%;
         background: #000;
       }
-      iframe {
+      #player {
         position: fixed;
         top: 0;
         left: 0;
@@ -20,28 +20,57 @@
         bottom: 0;
         width: 100vw;
         height: 100vh;
-        border: 0;
       }
     </style>
   </head>
   <body>
+    <div id="player"></div>
+
     <script>
+      // Read URL params
       const url = new URL(window.location.href);
       const videoId = url.searchParams.get('v') || 'M7lc1UVf-VE';
       const autoplay = url.searchParams.get('autoplay') || '1';
 
-      const iframe = document.createElement('iframe');
-      iframe.src =
-        'https://www.youtube-nocookie.com/embed/' +
-        encodeURIComponent(videoId) +
-        '?enablejsapi=1' +
-        '&autoplay=' + autoplay +
-        '&controls=0' +           // hide controls
-        '&origin=https://duplecast.com';
+      // 1) Load the YouTube IFrame API
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
 
-      iframe.allow = 'autoplay; encrypted-media';
-      iframe.allowFullscreen = true;
-      document.body.appendChild(iframe);
+      let player;
+
+      // 2) Called by the IFrame API when it's ready
+      function onYouTubeIframeAPIReady() {
+        player = new YT.Player('player', {
+          videoId: videoId,
+          host: 'https://www.youtube-nocookie.com', // use nocookie host
+          playerVars: {
+            autoplay: autoplay === '1' ? 1 : 0,
+            controls: 0,          // hide controls
+            rel: 0,
+            fs: 1,
+            iv_load_policy: 3,
+            modestbranding: 1,
+            playsinline: 1,
+            origin: 'https://duplecast.com'
+          },
+          events: {
+            onReady: onPlayerReady
+          }
+        });
+      }
+
+      // 3) Try to autoplay as soon as player is ready
+      function onPlayerReady(event) {
+        try {
+          event.target.playVideo();
+        } catch (e) {
+          console.log('playVideo error:', e);
+        }
+      }
+
+      // Expose required callback to global scope
+      window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
     </script>
   </body>
 </html>
