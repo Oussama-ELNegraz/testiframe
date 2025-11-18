@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <!-- make sure a referrer is sent -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>Duplecast YT Proxy</title>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: #000;
+      }
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      const url = new URL(window.location.href);
+      const videoId = url.searchParams.get('v') || 'M7lc1UVf-VE';
+      const autoplay = url.searchParams.get('autoplay') || '1';
+      const mute = url.searchParams.get('mute') || '1';
+
+      const iframe = document.createElement('iframe');
+      iframe.src =
+        'https://www.youtube-nocookie.com/embed/' +
+        encodeURIComponent(videoId) +
+        '?enablejsapi=1&autoplay=' +
+        autoplay +
+        '&mute=' +
+        mute +
+        '&origin=https://duplecast.com';
+
+      iframe.allow = 'autoplay; encrypted-media';
+      iframe.allowFullscreen = true;
+      document.body.appendChild(iframe);
+    </script>
+  </body>
+</html>
