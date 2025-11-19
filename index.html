@@ -57,6 +57,18 @@ tag.src = "https://www.youtube.com/iframe_api";
 document.getElementsByTagName("head")[0].appendChild(tag);
 
 /* ------------------------------
+   Helper to notify parent app
+-------------------------------- */
+function notifyParent(state) {
+  try {
+    window.parent.postMessage(
+      { source: "duplecast-yt-proxy", state: state },
+      "*"
+    );
+  } catch (e) {}
+}
+
+/* ------------------------------
    Called when API is ready
 -------------------------------- */
 function onYouTubeIframeAPIReady() {
@@ -72,13 +84,14 @@ function onYouTubeIframeAPIReady() {
       iv_load_policy: 3,
       modestbranding: 1,
       playsinline: 1,
-      origin: "https://duplecast.com",
+      origin: "https://oussama-elnegraz.github.io", // IMPORTANT: new origin
       mute: 1
     },
 
     events: {
       "onReady": onPlayerReady,
-      "onStateChange": onPlayerStateChange
+      "onStateChange": onPlayerStateChange,
+      "onError": onPlayerError
     }
   });
 }
@@ -100,6 +113,15 @@ function onPlayerReady(event) {
    Autoplay → Unmute trick
 -------------------------------- */
 function onPlayerStateChange(event) {
+  // Notify parent that playback started / ended
+  if (event.data === YT.PlayerState.PLAYING) {
+    notifyParent("PLAYING");
+  }
+  if (event.data === YT.PlayerState.ENDED) {
+    notifyParent("ENDED");
+  }
+
+  // Optional auto-unmute trick (can remove if it causes issues)
   if (event.data === YT.PlayerState.PLAYING && !hasUnmuted) {
     hasUnmuted = true;
     setTimeout(function () {
@@ -109,6 +131,13 @@ function onPlayerStateChange(event) {
       } catch (e) {}
     }, 500);
   }
+}
+
+/* ------------------------------
+   Error → notify parent
+-------------------------------- */
+function onPlayerError() {
+  notifyParent("ERROR");
 }
 
 // Expose callbacks
