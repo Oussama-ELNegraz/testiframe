@@ -128,6 +128,7 @@
             if (player && typeof player.unMute === "function") {
               player.unMute();
               player.setVolume(100);
+              console.log("Unmuted")
             }
           }, 600); // small delay helps with autoplay policies on TVs/browsers
         } catch (e) {}
