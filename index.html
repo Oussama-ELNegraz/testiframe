@@ -51,6 +51,7 @@
   var player = null;
   var hasNotifiedPlay = false;
   var hasNotifiedEnd  = false;
+  var hasUnmuted      = false;
 
   /* ------------------------------
      Load YouTube API (ES3 OK)
@@ -102,6 +103,7 @@
   -------------------------------- */
   function onPlayerReady(event) {
     try {
+      // Start muted so autoplay is allowed
       event.target.mute();
       event.target.setVolume(0);
       event.target.playVideo();
@@ -117,6 +119,19 @@
     if (event.data === YT.PlayerState.PLAYING && !hasNotifiedPlay) {
       hasNotifiedPlay = true;
       notifyParent("PLAYING");
+
+      // After playback actually starts, remove mute
+      if (!hasUnmuted) {
+        hasUnmuted = true;
+        try {
+          setTimeout(function () {
+            if (player && typeof player.unMute === "function") {
+              player.unMute();
+              player.setVolume(100);
+            }
+          }, 600); // small delay helps with autoplay policies on TVs/browsers
+        } catch (e) {}
+      }
     }
 
     if (event.data === YT.PlayerState.ENDED && hasNotifiedPlay && !hasNotifiedEnd) {
