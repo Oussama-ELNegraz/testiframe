@@ -4,16 +4,20 @@
     <meta charset="utf-8">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>YouTube Trailer</title>
     <style>
-        html, body {
+        html,
+        body {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background: #000;
+            background: #000000;
         }
+
         #player {
             position: absolute;
             top: 0;
@@ -23,7 +27,14 @@
             margin: 0;
             padding: 0;
             border: 0;
-            background: #000;
+            background: #000000;
+            outline: 0;
+
+            /*
+             * Trailer is display-only. Prevent mouse/touch/focus interaction
+             * from making YouTube UI controls appear over the video.
+             */
+            pointer-events: none;
         }
     </style>
 </head>
@@ -32,8 +43,9 @@
     id="player"
     src="about:blank"
     frameborder="0"
-    allow="autoplay; encrypted-media; picture-in-picture"
-    allowfullscreen
+    scrolling="no"
+    tabindex="-1"
+    allow="autoplay; encrypted-media"
     referrerpolicy="strict-origin-when-cross-origin">
 </iframe>
 <script>
@@ -48,17 +60,28 @@
         return;
     }
 
+    /*
+     * Video-only YouTube presentation:
+     * - no player controls
+     * - no fullscreen button
+     * - no keyboard control
+     * - no annotations
+     * - loop the same trailer so the related-video end screen is not reached
+     *
+     * rel=0 is kept as an extra restriction, but modern YouTube does not allow
+     * related videos to be disabled completely with rel alone.
+     */
     url = 'https://www.youtube.com/embed/' +
         encodeURIComponent(videoId) +
         '?autoplay=1' +
         '&controls=0' +
-        '&fs=0' +
-        '&rel=0' +
         '&disablekb=1' +
+        '&fs=0' +
+        '&iv_load_policy=3' +
         '&playsinline=1' +
+        '&rel=0' +
         '&loop=1' +
         '&playlist=' + encodeURIComponent(videoId) +
-        '&enablejsapi=1' +
         '&origin=' + encodeURIComponent(origin);
 
     player.src = url;
