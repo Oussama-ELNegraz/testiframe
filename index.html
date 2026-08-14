@@ -1,155 +1,68 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <title></title> <!-- empty title to avoid visible text in some TV browsers -->
-
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      background: #000;
-      overflow: hidden; /* no scroll bars */
-    }
-    #player {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      width: 100vw;
-      height: 100vh;
-      border: 0;
-    }
-  </style>
+    <meta charset="utf-8">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>YouTube Trailer</title>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+        }
+        #player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            background: #000;
+        }
+    </style>
 </head>
 <body>
-  <div id="player"></div>
+<iframe
+    id="player"
+    src="about:blank"
+    frameborder="0"
+    allow="autoplay; encrypted-media; picture-in-picture"
+    allowfullscreen
+    referrerpolicy="strict-origin-when-cross-origin">
+</iframe>
+<script>
+(function () {
+    var match = location.search.match(/[?&]v=([^&]+)/);
+    var videoId = match ? decodeURIComponent(match[1]) : '';
+    var player = document.getElementById('player');
+    var origin = location.protocol + '//' + location.host;
+    var url;
 
-  <script>
-  /* ------------------------------
-     ES3-compatible query parser
-  -------------------------------- */
-  function getQueryParam(name) {
-    var qs = window.location.search.substring(1);
-    var parts = qs.split("&");
-    for (var i = 0; i < parts.length; i++) {
-      var kv = parts[i].split("=");
-      if (kv[0] === name) {
-        return decodeURIComponent(kv[1]);
-      }
-    }
-    return null;
-  }
-
-  var videoId  = getQueryParam("v") || "M7lc1UVf-VE";
-  var autoplay = getQueryParam("autoplay") || "1";
-
-  var player = null;
-  var hasNotifiedPlay = false;
-  var hasNotifiedEnd  = false;
-  var hasUnmuted      = false;
-
-  /* ------------------------------
-     Load YouTube API (ES3 OK)
-  -------------------------------- */
-  var tag = document.createElement("script");
-  tag.src = "https://www.youtube.com/iframe_api";
-  document.getElementsByTagName("head")[0].appendChild(tag);
-
-  /* ------------------------------
-     Helper to notify parent app
-  -------------------------------- */
-  function notifyParent(state) {
-    try {
-      window.parent.postMessage(
-        { source: "duplecast-yt-proxy", state: state },
-        "*"
-      );
-    } catch (e) {}
-  }
-
-  /* ------------------------------
-     Called when API is ready
-  -------------------------------- */
-  function onYouTubeIframeAPIReady() {
-    player = new YT.Player("player", {
-      videoId: videoId,
-      host: "https://www.youtube.com",
-      playerVars: {
-        autoplay: autoplay === "1" ? 1 : 0,
-        controls: 0,
-        rel: 0,
-        fs: 1,
-        iv_load_policy: 3,
-        modestbranding: 1,
-        playsinline: 1,
-        origin: "https://oussama-elnegraz.github.io",
-        mute: 1
-      },
-      events: {
-        "onReady": onPlayerReady,
-        "onStateChange": onPlayerStateChange,
-        "onError": onPlayerError
-      }
-    });
-  }
-
-  /* ------------------------------
-     Player Ready
-  -------------------------------- */
-  function onPlayerReady(event) {
-    try {
-      // Start muted so autoplay is allowed
-      event.target.mute();
-      event.target.setVolume(0);
-      event.target.playVideo();
-    } catch (e) {
-      // silent fallback
-    }
-  }
-
-  /* ------------------------------
-     State changes
-  -------------------------------- */
-  function onPlayerStateChange(event) {
-    if (event.data === YT.PlayerState.PLAYING && !hasNotifiedPlay) {
-      hasNotifiedPlay = true;
-      notifyParent("PLAYING");
-
-      // After playback actually starts, remove mute
-      if (!hasUnmuted) {
-        hasUnmuted = true;
-        try {
-          setTimeout(function () {
-            if (player && typeof player.unMute === "function") {
-              player.unMute();
-              player.setVolume(100);
-              console.log("Unmuted")
-            }
-          }, 600); // small delay helps with autoplay policies on TVs/browsers
-        } catch (e) {}
-      }
+    if (!videoId || !player) {
+        return;
     }
 
-    if (event.data === YT.PlayerState.ENDED && hasNotifiedPlay && !hasNotifiedEnd) {
-      hasNotifiedEnd = true;
-      notifyParent("ENDED");
-    }
-  }
+    url = 'https://www.youtube.com/embed/' +
+        encodeURIComponent(videoId) +
+        '?autoplay=1' +
+        '&controls=0' +
+        '&fs=0' +
+        '&rel=0' +
+        '&disablekb=1' +
+        '&playsinline=1' +
+        '&loop=1' +
+        '&playlist=' + encodeURIComponent(videoId) +
+        '&enablejsapi=1' +
+        '&origin=' + encodeURIComponent(origin);
 
-  /* ------------------------------
-     Error → notify parent
-  -------------------------------- */
-  function onPlayerError() {
-    notifyParent("ERROR");
-  }
-
-  // Expose callback
-  window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
-  </script>
+    player.src = url;
+}());
+</script>
 </body>
 </html>
