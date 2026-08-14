@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
     <style>
         html,
         body {
@@ -18,74 +19,96 @@
             background: #000000;
         }
 
-        #player {
+        #youtube-viewport {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+            overflow: hidden;
+            background: #000000;
+        }
+
+        #player {
+            position: absolute;
+            top: -12%;
+            left: -4%;
+            width: 108%;
+            height: 124%;
             margin: 0;
             padding: 0;
             border: 0;
-            background: #000000;
             outline: 0;
-
-            /*
-             * Trailer is display-only. Prevent mouse/touch/focus interaction
-             * from making YouTube UI controls appear over the video.
-             */
+            background: #000000;
             pointer-events: none;
+        }
+
+        * {
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
         }
     </style>
 </head>
+
 <body>
-<iframe
-    id="player"
-    src="about:blank"
-    frameborder="0"
-    scrolling="no"
-    tabindex="-1"
-    allow="autoplay; encrypted-media"
-    referrerpolicy="strict-origin-when-cross-origin">
-</iframe>
-<script>
-(function () {
-    var match = location.search.match(/[?&]v=([^&]+)/);
-    var videoId = match ? decodeURIComponent(match[1]) : '';
-    var player = document.getElementById('player');
-    var origin = location.protocol + '//' + location.host;
-    var url;
+    <div id="youtube-viewport">
+        <iframe
+            id="player"
+            src="about:blank"
+            frameborder="0"
+            scrolling="no"
+            tabindex="-1"
+            aria-hidden="true"
+            allow="autoplay; encrypted-media"
+            referrerpolicy="strict-origin-when-cross-origin">
+        </iframe>
+    </div>
 
-    if (!videoId || !player) {
-        return;
-    }
+    <script>
+    (function () {
+        var match = location.search.match(/[?&]v=([^&]+)/);
+        var videoId = match ? decodeURIComponent(match[1]) : '';
+        var player = document.getElementById('player');
+        var origin = location.protocol + '//' + location.host;
+        var url;
 
-    /*
-     * Video-only YouTube presentation:
-     * - no player controls
-     * - no fullscreen button
-     * - no keyboard control
-     * - no annotations
-     * - loop the same trailer so the related-video end screen is not reached
-     *
-     * rel=0 is kept as an extra restriction, but modern YouTube does not allow
-     * related videos to be disabled completely with rel alone.
-     */
-    url = 'https://www.youtube.com/embed/' +
-        encodeURIComponent(videoId) +
-        '?autoplay=1' +
-        '&controls=0' +
-        '&disablekb=1' +
-        '&fs=0' +
-        '&iv_load_policy=3' +
-        '&playsinline=1' +
-        '&rel=0' +
-        '&loop=1' +
-        '&playlist=' + encodeURIComponent(videoId) +
-        '&origin=' + encodeURIComponent(origin);
+        if (!videoId || !player) {
+            return;
+        }
 
-    player.src = url;
-}());
-</script>
+        url =
+            'https://www.youtube.com/embed/' +
+            encodeURIComponent(videoId) +
+            '?autoplay=1' +
+            '&controls=0' +
+            '&disablekb=1' +
+            '&fs=0' +
+            '&iv_load_policy=3' +
+            '&playsinline=1' +
+            '&rel=0' +
+            '&loop=1' +
+            '&playlist=' + encodeURIComponent(videoId) +
+            '&origin=' + encodeURIComponent(origin);
+
+        player.src = url;
+        player.setAttribute('tabindex', '-1');
+        player.blur();
+
+        document.addEventListener('focusin', function (event) {
+            if (event.target === player) {
+                player.blur();
+            }
+        }, false);
+
+        document.addEventListener('mousedown', function (event) {
+            event.preventDefault();
+        }, false);
+
+        document.addEventListener('touchstart', function (event) {
+            event.preventDefault();
+        }, false);
+    }());
+    </script>
 </body>
 </html>
