@@ -3,8 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
     <style>
         html,
@@ -30,72 +29,29 @@
             background: #000000;
         }
 
-        /*
-         * Overscan the YouTube surface so top/bottom chrome remains
-         * outside the visible viewport.
-         */
         #player {
             position: absolute;
-            top: -13%;
+            top: -12%;
             left: -4%;
             width: 108%;
-            height: 126%;
+            height: 124%;
             margin: 0;
             padding: 0;
             border: 0;
             outline: 0;
             background: #000000;
-
             pointer-events: none;
-
-            -webkit-user-select: none;
-            user-select: none;
         }
 
-        /*
-         * This transparent layer is ALWAYS above YouTube.
-         *
-         * TV remotes / keyboard / mouse / touch focus this element instead
-         * of the iframe. Therefore YouTube never receives navigation,
-         * play/pause, seek, Enter or media-key input that can wake its UI.
-         */
-        #input-shield {
-            position: absolute;
-            z-index: 999999;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-
-            margin: 0;
-            padding: 0;
-            border: 0;
-            outline: 0;
-
-            background: rgba(0, 0, 0, 0);
-
-            cursor: default;
-            pointer-events: auto;
-
+        * {
             -webkit-user-select: none;
             user-select: none;
-
             -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-        }
-
-        #input-shield:focus,
-        #input-shield:active {
-            border: 0;
-            outline: 0;
-            background: rgba(0, 0, 0, 0);
-            -webkit-box-shadow: none;
-            box-shadow: none;
         }
     </style>
 </head>
 
 <body>
-
     <div id="youtube-viewport">
         <iframe
             id="player"
@@ -107,43 +63,20 @@
             allow="autoplay; encrypted-media"
             referrerpolicy="strict-origin-when-cross-origin">
         </iframe>
-
-        <div
-            id="input-shield"
-            tabindex="0"
-            aria-hidden="true">
-        </div>
     </div>
 
     <script>
     (function () {
         var match = location.search.match(/[?&]v=([^&]+)/);
         var videoId = match ? decodeURIComponent(match[1]) : '';
-
         var player = document.getElementById('player');
-        var shield = document.getElementById('input-shield');
-
-        var origin =
-            location.protocol + '//' + location.host;
-
+        var origin = location.protocol + '//' + location.host;
         var url;
 
-        if (!videoId || !player || !shield) {
+        if (!videoId || !player) {
             return;
         }
 
-        /*
-         * YouTube configuration:
-         *
-         * controls=0       -> no normal YouTube control bar
-         * disablekb=1      -> YouTube keyboard shortcuts disabled
-         * fs=0             -> no fullscreen button
-         * iv_load_policy=3 -> no annotations
-         * playsinline=1    -> stay inside wrapper
-         * rel=0            -> no generic related-video set
-         * loop=1           -> loop same trailer
-         * playlist=id      -> required for looping one video
-         */
         url =
             'https://www.youtube.com/embed/' +
             encodeURIComponent(videoId) +
@@ -159,108 +92,23 @@
             '&origin=' + encodeURIComponent(origin);
 
         player.src = url;
-
-        /*
-         * Never allow iframe focus.
-         */
         player.setAttribute('tabindex', '-1');
+        player.blur();
 
-        try {
-            player.blur();
-        } catch (e) {}
-
-        /*
-         * Give the transparent shield permanent focus.
-         */
-        function focusShield() {
-            try {
-                shield.focus();
-            } catch (e) {}
-        }
-
-        focusShield();
-
-        setTimeout(focusShield, 0);
-        setTimeout(focusShield, 100);
-        setTimeout(focusShield, 500);
-        setTimeout(focusShield, 1500);
-
-        /*
-         * If the TV browser tries to move focus to the iframe,
-         * immediately move it back to the shield.
-         */
         document.addEventListener('focusin', function (event) {
-            if (event.target !== shield) {
-                focusShield();
+            if (event.target === player) {
+                player.blur();
             }
-        }, true);
-
-        /*
-         * Block every key before it can reach YouTube.
-         *
-         * RETURN/BACK is intentionally not handled here by the iframe.
-         * Your parent TV application still controls closing the trailer.
-         */
-        function blockInput(event) {
-            if (!event) {
-                return false;
-            }
-
-            if (event.preventDefault) {
-                event.preventDefault();
-            }
-
-            if (event.stopPropagation) {
-                event.stopPropagation();
-            }
-
-            if (event.stopImmediatePropagation) {
-                event.stopImmediatePropagation();
-            }
-
-            focusShield();
-            return false;
-        }
-
-        shield.addEventListener('keydown', blockInput, true);
-        shield.addEventListener('keyup', blockInput, true);
-        shield.addEventListener('keypress', blockInput, true);
-
-        shield.addEventListener('click', blockInput, true);
-        shield.addEventListener('dblclick', blockInput, true);
-        shield.addEventListener('mousedown', blockInput, true);
-        shield.addEventListener('mouseup', blockInput, true);
-
-        shield.addEventListener('touchstart', blockInput, true);
-        shield.addEventListener('touchmove', blockInput, true);
-        shield.addEventListener('touchend', blockInput, true);
-
-        /*
-         * Also intercept browser-level media keys where supported.
-         */
-        document.addEventListener('keydown', blockInput, true);
-        document.addEventListener('keyup', blockInput, true);
-
-        window.addEventListener('blur', function () {
-            setTimeout(focusShield, 0);
         }, false);
 
-        /*
-         * Keep the iframe permanently non-interactive even if a TV browser
-         * modifies DOM focusability after navigation.
-         */
-        setInterval(function () {
-            if (player.getAttribute('tabindex') !== '-1') {
-                player.setAttribute('tabindex', '-1');
-            }
+        document.addEventListener('mousedown', function (event) {
+            event.preventDefault();
+        }, false);
 
-            if (document.activeElement !== shield) {
-                focusShield();
-            }
-        }, 500);
-
+        document.addEventListener('touchstart', function (event) {
+            event.preventDefault();
+        }, false);
     }());
     </script>
-
 </body>
 </html>
